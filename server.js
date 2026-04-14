@@ -5,7 +5,24 @@ const cors = require("cors");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "https://aurawardrobe.blogspot.com",
+  "https://aurawardrobe.in",
+  "https://www.aurawardrobe.in"
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS blocked: " + origin));
+  },
+  credentials: true
+}));
+
+app.set("trust proxy", 1);
 
 // 🔐 USE ENV VARIABLES (IMPORTANT)
 const razorpay = new Razorpay({
@@ -46,12 +63,12 @@ app.post("/verify-payment", (req, res) => {
       .digest("hex");
 
     if (generated_signature === razorpay_signature) {
-      res.json({ status: "verified" });
+      return res.json({ success: true });
     } else {
-      res.json({ status: "failed" });
+      return res.json({ success: false });
     }
   } catch (err) {
-    res.status(500).json({ error: "Verification failed" });
+    return res.status(500).json({ success: false });
   }
 });
 
